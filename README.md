@@ -13,7 +13,7 @@ Change variable koboid to your formid for other RMS datasets.
 1. Load data/rms_clean_georgia2022.RData from previous step 
 2. Create srvyr objects to define sampling designs hh.design and ind.design with weights, clusters and stratification as required
 3. With function rmstable in file rmsfunctions.R (sourced above) create tables with disaggregation variables gender, age (UNHCR age categories) and disability (WG disability identifier 3 from short question set). 
-4. Combine tables and write to .xlsx file in output folder for further formatting. The tables are read column-wise (i.e. column % in one disaggregation variable value sum to 100% - e.g. for indicator core outcome 1.3, values across two indicator outcomes "Does not have documents or credentials" plus "Has documents or credentials" in column "Female" sum to 100%). low_ and upp_ columns for respective 95% lower and upper confidence interval boundaries. 
+4. Combine tables and write to .xlsx file in output folder for further formatting. The tables are read column-wise (i.e. column % in one disaggregation variable value sum to 100% - e.g. for indicator core outcome 1.3, values across two indicator outcomes "Does not have documents or credentials" plus "Has documents or credentials" in column "Female" sum to 100%). low_ and upp_ columns for respective 95% lower and upper confidence interval bounds. 
 
 
 ### rmsfunctions.R
