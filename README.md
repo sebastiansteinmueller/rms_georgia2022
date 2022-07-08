@@ -17,7 +17,7 @@ Change variable koboid to your formid for other RMS datasets.
 
 
 ### rmsfunctions.R
-rmstable function to create table of indicator and other variables with headers gender, age, disability on a srvyr object. The tables are currently not flexible and the disaggregation variables need to be in the exact format as provided in the function: gender/sex variable with labels "Female", "Male"; age brackets with category labels "0-4", "5-11", "12-17", "18-24", "25-49", "50-59", "60+"; disability identifier variable with labels "Without disability", "With disability".
+rmstable function to create table of indicator and other variables with headers gender, age, disability on a tbl_svy object. The tables are currently not flexible and the disaggregation variables need to be in the exact format as provided in the function: gender/sex variable with labels "Female", "Male"; age brackets with category labels "0-4", "5-11", "12-17", "18-24", "25-49", "50-59", "60+"; disability identifier variable with labels "Without disability", "With disability".
 
 ## Merging in rms_process_georgia2022.R
 * Merge s1a and s1b (both datasets contain HH roster information, one row per HH member) to a single HH member roster dataset s1. Merging variable: indid2 (see construction in code). This merging variable is removed in file rms_clean_georgia2022.RData since it contains names. 
