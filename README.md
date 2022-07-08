@@ -1,5 +1,5 @@
 # RMS Georgia 2022
-R-code to process and analyse data from the RMS Georgia 2022
+R scripts to process and analyse data from the RMS Georgia 2022
 
 ## Workflow 
 ### rms_process_georgia2022.R
