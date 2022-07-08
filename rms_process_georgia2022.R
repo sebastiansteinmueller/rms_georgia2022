@@ -154,6 +154,17 @@ s1 <- s1 %>% # demographics / disaggregation variables
                  breaks = c(-1, 4, 11, 17, 24, 49, 59, Inf),
                   labels = c("0-4", "5-11", "12-17", "18-24", "25-49", "50-59", "60+"))
   ) %>%
+  mutate( # primary citizenship from REF01 and REF02
+    citizenship = case_when(
+                REF01 == "1" ~ "GEO",
+                REF01 %in% c("2", "98") ~ as.character(REF02),
+                REF01 == "99" ~ "99"
+        )
+  ) %>%
+  mutate(citizenship = labelled(citizenship,
+                                labels = val_labels(s1$REF02),
+                                label = var_label(s1$REF02))
+  ) %>%
   mutate( # disability identifier variables according to Washington Group standards
     disaux1_234 = DIS01 %in% c("2","3","4"), # indicator variables for all 6 domains with value TRUE if SOME DIFFICULTY or A LOT OF DIFFICULTY or CANNOT DO AT ALL
     disaux2_234 = DIS02 %in% c("2","3","4"),
@@ -354,7 +365,8 @@ s1.hhlevel <- s1 %>%
   group_by(`_parent_index`) %>%
   summarise(
     hhsize = n(), # hh size
-    hhdisability3aux = sum(DISABILITY3 == 1) # disability
+    hhdisability3aux = sum(DISABILITY3 == 1), # number of disabled household members
+    hhGeorgians = sum(citizenship == "GEO") # number of Georgian citizens in HH
   ) %>%
   ungroup() %>%
   mutate(hhdisability3 = case_when( #  disability at HH level (at least one disabled HH member (DISABILITY3 from WG) vs none)
@@ -373,6 +385,22 @@ s1.hhlevel <- s1 %>%
     hhsizecat = cut(hhsize, # categorical hh size
                     breaks = c(-1, 1, 3, 5, Inf),
                     labels = c("1", "2-3", "4-5", "6+"))
+  ) %>%
+  mutate(
+    allGeorgiansAux = hhsize - hhGeorgians
+  ) %>%
+  mutate(
+    allGeorgians = case_when(
+      allGeorgiansAux == 0 ~ 1,
+      allGeorgiansAux > 0 ~ 0
+    )
+  ) %>%
+  mutate(allGeorgians = labelled(allGeorgians,
+                                  labels = c(
+                                    "At least one non-Georgian in HH" = 0,
+                                    "All HH members Georgians" = 1
+                                  ),
+                                  label = "Georgian citizens in HH")
   ) %>%
   left_join( # add sex and age of head of household
     s1 %>%
@@ -405,7 +433,7 @@ hh <- hh %>%
 dim(hh)
 dim(s1)
 hh <- hh %>%
-  left_join(s1 %>% select(indid, R01, R02, R02_rel, R03cat, R06, REF01, REF02, REF06, countrybirth, REF15, REF16, documents, IDP01, DIS01:DISABILITY4),
+  left_join(s1 %>% select(indid, R01, R02, R02_rel, R03cat, R06, citizenship, REF06, countrybirth, REF15, REF16, documents, IDP01, DIS01:DISABILITY4),
             by = "indid")
 dim(hh)
 
@@ -422,7 +450,7 @@ dim(s1)
 #### III. Remove personal identifiers #####
 
 hh <- hh %>%
-  select(-c(adult_name, fam_name1:fam_name9, R01, namechild2less, woman_name_b_total))
+  select(-c(adult_name, fam_name1:fam_name9, namechild2less, women_name_b_total))
 
 s1 <- s1 %>%
   select(-c(R01, indid2, R05b, calculation_002, AgeMonths, calculation3, calculation4, R04, adult, name_individual, ind_age_month))
