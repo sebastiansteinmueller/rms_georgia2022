@@ -35,9 +35,43 @@ library(openxlsx)
 load("data/rms_clean_georgia2022.RData")
 
 
+### load ASR 2021 cleaned data for post-stratification
+load("data/asr_2020-2021_20220517.RData")
+
+rm(list=c("hst", "idp", "oth", "ref", "ret", "roc", "rsd", "sta", "uasc", "vda", "countries")) # remove tables not needed
+
+
+
 #### II. Define weights / post-stratification distributions #####
 
-# add
+# calculate post-stratification counts from ASR end-2021 demographic table for refugees/asylum-seekers in Georgia
+
+dem <- dem %>%
+  filter(year == 2021, asylum_iso3 == "GEO", populationType %in% c("REF", "ASY"), totalEndYear >0) %>% # ROC (refugee-like) are in Abkhazia according to PSR internal notes
+  mutate(
+    checkFemale = rowSums(select(.,female_0_4:female_12_17, female_18_59, female_60), na.rm = T), # check age categories add up to totals
+    checkMale = rowSums(select(.,male_0_4:male_12_17, male_18_59, male_60), na.rm = T),
+    checkTotalEndYear =  rowSums(select(.,female_0_4:female_12_17, female_18_59, female_60,
+                                        male_0_4:male_12_17, male_18_59, male_60),
+                                 na.rm = T)
+    ) %>%
+  mutate(
+    checkFemaleDiff = checkFemale-female,
+    checkMaleDiff = checkMale-male,
+    checkTotalEndYearDiff = checkTotalEndYear-totalEndYear
+  )
+
+# check
+  summary(dem$checkFemaleDiff)
+  summary(dem$checkMaleDiff)
+  summary(dem$checkTotalEndYearDiff) # all OK, 0 differences
+
+ps.ori.dem <- dem %>%
+    mutate(origin_iso3 = ifelse(origin == "UKN", "98", as.character(origin_iso3))) %>% # origin ISO3 = 98 for unknowns
+    group_by(origin_iso3) %>%
+    summarise_at(vars(female_0_4:female_12_17, female_18_59, female_60,
+                      male_0_4:male_12_17, male_18_59, male_60), ~sum(., na.rm = T))
+
 
 
 
