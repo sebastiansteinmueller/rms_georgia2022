@@ -9,7 +9,7 @@ Change variable koboid to your formid for other RMS datasets.
 3. Remove some individual identifiers (but the resulting datafile is not anonymised). 
 4. Write hh and s1 objects to file rms_clean_georgia2022.RData in subfolder data. These are clean processed datafiles for further weighting and analysis. 
 
-### rms_weigth_georgia2022.R
+### rms_weight_georgia2022.R
 1. Load data/rms_clean_georgia2022.RData from previous step 
 2. Define weights and post-stratification distributions from other sources as required
 3. Create tbl_svy objects with srvyr package to define sampling designs hh.design and ind.design and versions without national population (hhref.design and indref.design, i.e. removing HHs with only nationals in HH object and nationals from ind object) with weights, clusters and stratification
