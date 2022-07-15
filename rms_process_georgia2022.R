@@ -84,8 +84,8 @@ dim(s1)
 
 
 ## check unique head of household
-View(s1 %>% group_by(`_parent_index`) %>% filter(sum(R02_rel == "1") == 0)) # three HHs with no head
-View(s1 %>% group_by(`_parent_index`) %>% filter(sum(R02_rel == "1") > 1)) # two HHs with more than one head
+# View(s1 %>% group_by(`_parent_index`) %>% filter(sum(R02_rel == "1") == 0)) # three HHs with no head
+# View(s1 %>% group_by(`_parent_index`) %>% filter(sum(R02_rel == "1") > 1)) # two HHs with more than one head
 
 
 ## create unique head of household variable:
@@ -135,7 +135,7 @@ s1 <- s1 %>%
   ungroup()
 
 ## check head of household again
-View(s1 %>% group_by(`_parent_index`) %>% filter(sum(householdHead == 1) != 1)) # OK, no HHs with other than 1 head
+# View(s1 %>% group_by(`_parent_index`) %>% filter(sum(householdHead == 1) != 1)) # OK, no HHs with other than 1 head
 
 # check age range of eligible adults for individual interviews
 range(s1 %>% select(`_parent_index`, adult_age, R03) %>% filter(!is.na(adult_age)) %>% select(R03)) # ERROR in Georgia xlsform: only adults 19+ selected
@@ -366,7 +366,7 @@ s1.hhlevel <- s1 %>%
   summarise(
     hhsize = n(), # hh size
     hhdisability3aux = sum(DISABILITY3 == 1), # number of disabled household members
-    hhGeorgians = sum(citizenship == "GEO") # number of Georgian citizens in HH
+    hhNationals = sum(citizenship == "GEO") # number of National citizens in HH (adjust national code for other RMS)
   ) %>%
   ungroup() %>%
   mutate(hhdisability3 = case_when( #  disability at HH level (at least one disabled HH member (DISABILITY3 from WG) vs none)
@@ -387,33 +387,35 @@ s1.hhlevel <- s1 %>%
                     labels = c("1", "2-3", "4-5", "6+"))
   ) %>%
   mutate(
-    allGeorgiansAux = hhsize - hhGeorgians
+    allNationalsAux = hhsize - hhNationals
   ) %>%
   mutate(
-    allGeorgians = case_when(
-      allGeorgiansAux == 0 ~ 1,
-      allGeorgiansAux > 0 ~ 0
+    allNationals = case_when(
+      allNationalsAux == 0 ~ 1,
+      allNationalsAux > 0 ~ 0
     )
   ) %>%
-  mutate(allGeorgians = labelled(allGeorgians,
+  mutate(allNationals = labelled(allNationals,
                                   labels = c(
-                                    "At least one non-Georgian in HH" = 0,
-                                    "All HH members Georgians" = 1
+                                    "At least one non-national in HH" = 0,
+                                    "All HH members nationals" = 1
                                   ),
-                                  label = "Georgian citizens in HH")
+                                  label = "National citizens in HH")
   ) %>%
   left_join( # add sex and age of head of household
     s1 %>%
       filter(householdHead == 1) %>%
-      select(`_parent_index`, R02, R03, R03cat),
+      select(`_parent_index`, R02, R03, R03cat, citizenship, REF06),
     by = "_parent_index"
   ) %>%
   rename(
     headHHR02 = R02,
     headHHR03 = R03,
-    headHHR03cat = R03cat
+    headHHR03cat = R03cat,
+    headHHcitizenship = citizenship,
+    headHHREF06 = REF06
   ) %>%
-select(-hhdisability3aux)
+select(-hhdisability3aux, -allNationalsAux)
 
 # check unique HHs
 sum(duplicated(s1.hhlevel$`_parent_index`)) # OK, 0
@@ -457,7 +459,7 @@ s1 <- s1 %>%
 
 
 
-#### IV. Write to Rdata for analysis #####
+#### IV. Write to Rdata for weighting and post-stratification #####
 
 save(hh, s1, file = "data/rms_clean_georgia2022.RData")
 
