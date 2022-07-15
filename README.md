@@ -7,11 +7,16 @@ R scripts to process and analyse data from the RMS Georgia 2022
 Change variable koboid to your formid for other RMS datasets.
 2. Data checks, merge between HH and individual data, create demographic variables and RBM indicator variables, e.g. WG disability indicators. See commented code for details. Merge created variables between HH data (object hh) and individual HH roster data (object s1)
 3. Remove some individual identifiers (but the resulting datafile is not anonymised). 
-4. Write hh and s1 objects to file rms_clean_georgia2022.RData in subfolder data. These are clean processed datafiles for further analysis. 
+4. Write hh and s1 objects to file rms_clean_georgia2022.RData in subfolder data. These are clean processed datafiles for further weighting and analysis. 
+
+### rms_weigth_georgia2022.R
+1. Load data/rms_clean_georgia2022.RData from previous step 
+2. Define weights and post-stratification distributions from other sources as required
+3. Create tbl_svy objects with srvyr package to define sampling designs hh.design and ind.design and versions without national population (hhref.design and indref.design, i.e. removing HHs with only nationals in HH object and nationals from ind object) with weights, clusters and stratification
+4. Write out original datasets and new tbl_svy objects to file rms_clean_weighted_georgia2022.RData for further analysis.
 
 ### rms_tables_georgia2022.R
-1. Load data/rms_clean_georgia2022.RData from previous step 
-2. Create srvyr objects to define sampling designs hh.design and ind.design with weights, clusters and stratification as required
+1. Load data/rms_clean_weighted_georgia2022.RData from previous step 
 3. With function rmstable in file rmsfunctions.R (sourced above) create tables with disaggregation variables gender, age (UNHCR age categories) and disability (WG disability identifier 3 from short question set). 
 4. Combine tables and write to .xlsx file in output folder for further formatting. The tables are read column-wise (i.e. column % in one disaggregation variable value sum to 100% - e.g. for indicator core outcome 1.3, values across two indicator outcomes "Does not have documents or credentials" plus "Has documents or credentials" in column "Female" sum to 100%). low_ and upp_ columns for respective 95% lower and upper confidence interval bounds. 
 
