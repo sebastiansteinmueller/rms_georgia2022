@@ -42,9 +42,9 @@ rm(list=c("hst", "idp", "oth", "ref", "ret", "roc", "rsd", "sta", "uasc", "vda",
 
 
 
-#### II. Define weights / post-stratification distributions #####
+#### II. Compare ASR and survey data #####
 
-# calculate post-stratification counts from ASR end-2021 demographic table for refugees/asylum-seekers in Georgia
+## calculate post-stratification counts from ASR end-2021 demographic table for refugees/asylum-seekers in Georgia
 
 dem <- dem %>%
   filter(year == 2021, asylum_iso3 == "GEO", populationType %in% c("REF", "ASY"), totalEndYear >0) %>% # ROC (refugee-like) are in Abkhazia according to PSR internal notes
@@ -66,16 +66,45 @@ dem <- dem %>%
   summary(dem$checkMaleDiff)
   summary(dem$checkTotalEndYearDiff) # all OK, 0 differences
 
-ps.ori.dem <- dem %>%
+t.ori.dem <- dem %>%
     mutate(origin_iso3 = ifelse(origin == "UKN", "98", as.character(origin_iso3))) %>% # origin ISO3 = 98 for unknowns
     group_by(origin_iso3) %>%
     summarise_at(vars(female_0_4:female_12_17, female_18_59, female_60,
-                      male_0_4:male_12_17, male_18_59, male_60), ~sum(., na.rm = T))
+                      male_0_4:male_12_17, male_18_59, male_60), ~sum(., na.rm = T)) %>%
+    ungroup() %>%
+    mutate(totalEndYear = rowSums(select(.,`female_0_4`:`male_60`), na.rm = T)) %>%
+    arrange(desc(totalEndYear))
+
+t.ori.dem.adult <- dem %>%
+  mutate(origin_iso3 = ifelse(origin == "UKN", "98", as.character(origin_iso3))) %>% # origin ISO3 = 98 for unknowns
+  group_by(origin_iso3) %>%
+  summarise_at(vars(female_18_59, female_60,
+                   male_18_59, male_60), ~sum(., na.rm = T)) %>%
+  ungroup() %>%
+  mutate(totalEndYear = rowSums(select(.,`female_18_59`:`male_60`), na.rm = T)) %>%
+  arrange(desc(totalEndYear))
+
+## compare to survey data
+
+# selected adult respondent (should be random sample of adult survey population)
+t.adultind.refori.dem <- hh %>%
+  filter(citizenship != "GEO") %>%
+  unite("ageSex", R02, R03cat2, remove = T) %>%
+  group_by(citizenship, ageSex) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  pivot_wider(names_from = ageSex, values_from = n) %>%
+  mutate(total = rowSums(select(.,`Female_18-59`:`Male_60+`), na.rm = T)) %>%
+  select(citizenship, `Female_18-59`, `Female_60+`, `Male_18-59`, `Male_60+`, total) %>%
+  arrange(desc(total))
+
+# all non-national HH members
 
 
+#### III. Define weights / post-stratification distributions #####
 
 
-#### III. Make survey objects #####
+#### IV. Make survey objects #####
 
 ### DEFINE YOUR SURVEY OBJECTS HERE ###
 
@@ -107,7 +136,7 @@ indref.design <- s1 %>%
   as_survey_design(ids = `parent_index`) # <- DEFINE YOUR INDIVIDUAL SURVEY OBJECT HERE
 
 
-#### IV. Write to Rdata for analysis #####
+#### V. Write to Rdata for analysis #####
 
 save(hh, s1, hh.design, hhref.design, ind.design, indref.design, file = "data/rms_clean_weighted_georgia2022.RData")
 

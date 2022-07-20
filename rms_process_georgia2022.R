@@ -152,7 +152,10 @@ s1 <- s1 %>% # demographics / disaggregation variables
   mutate(
     R03cat = cut(R03, # UNHCR age brackets
                  breaks = c(-1, 4, 11, 17, 24, 49, 59, Inf),
-                  labels = c("0-4", "5-11", "12-17", "18-24", "25-49", "50-59", "60+"))
+                  labels = c("0-4", "5-11", "12-17", "18-24", "25-49", "50-59", "60+")),
+    R03cat2 = cut(R03, # UNHCR age brackets
+                 breaks = c(-1, 4, 11, 17, 59, Inf),
+                 labels = c("0-4", "5-11", "12-17", "18-59", "60+"))
   ) %>%
   mutate( # primary citizenship from REF01 and REF02
     citizenship = case_when(
@@ -405,13 +408,14 @@ s1.hhlevel <- s1 %>%
   left_join( # add sex and age of head of household
     s1 %>%
       filter(householdHead == 1) %>%
-      select(`_parent_index`, R02, R03, R03cat, citizenship, REF06),
+      select(`_parent_index`, R02, R03, R03cat, R03cat2, citizenship, REF06),
     by = "_parent_index"
   ) %>%
   rename(
     headHHR02 = R02,
     headHHR03 = R03,
     headHHR03cat = R03cat,
+    headHHR03cat2 = R03cat2,
     headHHcitizenship = citizenship,
     headHHREF06 = REF06
   ) %>%
@@ -435,7 +439,7 @@ hh <- hh %>%
 dim(hh)
 dim(s1)
 hh <- hh %>%
-  left_join(s1 %>% select(indid, R01, R02, R02_rel, R03cat, R06, citizenship, REF06, countrybirth, REF15, REF16, documents, IDP01, DIS01:DISABILITY4),
+  left_join(s1 %>% select(indid, R01, R02, R02_rel, R03cat, R03cat2, R06, citizenship, REF06, countrybirth, REF15, REF16, documents, IDP01, DIS01:DISABILITY4),
             by = "indid")
 dim(hh)
 
