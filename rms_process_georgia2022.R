@@ -153,9 +153,13 @@ s1 <- s1 %>% # demographics / disaggregation variables
     R03cat = cut(R03, # UNHCR age brackets
                  breaks = c(-1, 4, 11, 17, 24, 49, 59, Inf),
                   labels = c("0-4", "5-11", "12-17", "18-24", "25-49", "50-59", "60+")),
-    R03cat2 = cut(R03, # UNHCR age brackets
+    R03cat2 = cut(R03, # UNHCR broad age brackets
                  breaks = c(-1, 4, 11, 17, 59, Inf),
                  labels = c("0-4", "5-11", "12-17", "18-59", "60+"))
+  ) %>%
+  mutate(
+    R03cat = labelled(R03cat, label = "UNHCR fine age brackets"),
+    R03cat2 = labelled(R03cat2, label = "UNHCR broad age brackets (18-59)")
   ) %>%
   mutate( # primary citizenship from REF01 and REF02
     citizenship = case_when(
@@ -167,6 +171,12 @@ s1 <- s1 %>% # demographics / disaggregation variables
   mutate(citizenship = labelled(citizenship,
                                 labels = val_labels(s1$REF02),
                                 label = var_label(s1$REF02))
+  ) %>%
+  mutate(originAux = case_when( # create auxiliary variable to assign origin defined as imputed citizenship: country of birth if citizenship not recorded and for foreign-born stateless persons, most common origin of all other HH members for native-born stateless people and those with still unknown origin"
+                !(citizenship %in% c("77", "98", "99")) ~ as.character(citizenship),
+                citizenship %in% c("77", "98", "99") & !(REF06 %in% c("77", "98", "99", "GEO")) ~ as.character(REF06), # adjust country code
+                citizenship %in% c("77", "98", "99") & REF06 %in% c("77", "98", "99", "GEO") ~ NA_character_, # adjust country code
+        )
   ) %>%
   mutate( # disability identifier variables according to Washington Group standards
     disaux1_234 = DIS01 %in% c("2","3","4"), # indicator variables for all 6 domains with value TRUE if SOME DIFFICULTY or A LOT OF DIFFICULTY or CANNOT DO AT ALL
@@ -424,10 +434,22 @@ select(-hhdisability3aux, -allNationalsAux)
 # check unique HHs
 sum(duplicated(s1.hhlevel$`_parent_index`)) # OK, 0
 
-# merge to HH dataset
+# most frequent non-national origin nationality/DOB in HH
+s1.HHorigin <- s1 %>%
+  mutate(originAux2 = ifelse(originAux == "GEO", NA_character_, originAux)) %>%
+  filter(!is.na(originAux2)) %>%
+  group_by(`_parent_index`, originAux2) %>%
+  summarise(n= n()) %>%
+  slice_max(originAux2, with_ties = F) %>%
+  ungroup()
 
+
+# merge to HH dataset
 hh <- hh %>%
   left_join(s1.hhlevel,
+            by = c("_index" = "_parent_index")
+  ) %>%
+  left_join(s1.HHorigin %>% select(`_parent_index`, originAux2 ),
             by = c("_index" = "_parent_index")
   )
 
@@ -444,22 +466,40 @@ hh <- hh %>%
 dim(hh)
 
 
-## merge indicator hh variables to be expressed as population % to s1
+## merge indicator hh variables to be expressed as population % to s1, and most frequent origin to update origin variable
 
 dim(hh)
 dim(s1)
 s1 <- s1 %>%
-  left_join(hh %>% select(`_index`, cookingfuel), by = c("_parent_index" = "_index"))
+  left_join(hh %>% select(`_index`, cookingfuel, originAux2), by = c("_parent_index" = "_index"))
 dim(s1)
 
+
+## finalise imputing origin variable for missing/unknown nationality and stateless people
+s1 <- s1 %>%
+  mutate(origin = case_when(
+            !(is.na(originAux)) ~ as.character(originAux),
+            is.na(originAux) & !is.na(originAux2) ~ as.character(originAux2),
+            is.na(originAux) & is.na(originAux2) & REF06 != "GEO" ~ as.character(REF06),
+            is.na(originAux) & is.na(originAux2) & REF06 == "GEO" ~ as.character(citizenship),
+            )
+         ) %>%
+  mutate(origin = labelled(origin,
+         labels = val_labels(s1$citizenship),
+         label = "Origin (nationality where available, country of birth for foreign-born stateless persons)")
+         )
+
+hh <- hh %>%
+  left_join(s1 %>% select(indid, origin),
+            by = "indid")
 
 #### III. Remove personal identifiers #####
 
 hh <- hh %>%
-  select(-c(adult_name, fam_name1:fam_name9, namechild2less, women_name_b_total))
+  select(-c(adult_name, fam_name1:fam_name9, namechild2less, women_name_b_total, -originAux, -originAux2))
 
 s1 <- s1 %>%
-  select(-c(R01, indid2, R05b, calculation_002, AgeMonths, calculation3, calculation4, R04, adult, name_individual, ind_age_month))
+  select(-c(R01, indid2, R05b, calculation_002, AgeMonths, calculation3, calculation4, R04, adult, name_individual, ind_age_month, -originAux, -originAux2))
 
 
 

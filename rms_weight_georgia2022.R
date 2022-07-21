@@ -42,9 +42,37 @@ rm(list=c("hst", "idp", "oth", "ref", "ret", "roc", "rsd", "sta", "uasc", "vda",
 
 
 
-#### II. Compare ASR and survey data #####
+#### II. Compare ASR and survey data and define IRRS-compliant populations #####
 
-## calculate post-stratification counts from ASR end-2021 demographic table for refugees/asylum-seekers in Georgia
+### check which individuals and HHs are (all-) refugees/asylum-seekers
+# for Georgia: the sampling frame was refugee/asylum-seeker/humanitarian status holder heads of HH
+# we therefore assume that individual respondents and HH members are REF/ASY as long as they don't hold Georgian citizenship
+# in other surveys with different sampling frames, the reason for the last migration to the country and the visa/resident permit might also be considered for population definition
+# individuals with Georgian citizenship and HHs with only Georgians will be removed from the analyis datasets / survey objects
+
+# adult individuals
+t.adultind.cit <- hh %>%
+  group_by(origin) %>%
+  summarise(n = n()) %>%
+  mutate(perc = n/sum(n)) %>%
+  arrange(desc(n))  # 13% (n=44) respondents to individual interviews are Georgian (fix this in next form version, only interview refugees for individual interviews) - should be removed from the analysis
+
+# HH members
+t.hhm.cit <- s1 %>%
+  group_by(origin) %>%
+  summarise(n = n()) %>%
+  mutate(perc = n/sum(n)) %>%
+  arrange(desc(n)) # 23 % (n=196) HH members are Georgian (OK, it's plausible and to be expected that refugees live with nationals including former refugees now naturalised)
+
+# HHs
+t.hh.cit <- hh %>%
+  group_by(allNationals) %>% # variable describing whether all HH members are nationals
+  summarise(n = n()) %>%
+  mutate(perc = n/sum(n)) # 2% (n=8) HHs consist of Georgian nationals only - should be removed from the analysis
+
+
+
+### calculate post-stratification counts from ASR end-2021 demographic table for refugees/asylum-seekers in Georgia
 
 dem <- dem %>%
   filter(year == 2021, asylum_iso3 == "GEO", populationType %in% c("REF", "ASY"), totalEndYear >0) %>% # ROC (refugee-like) are in Abkhazia according to PSR internal notes
@@ -66,7 +94,7 @@ dem <- dem %>%
   summary(dem$checkMaleDiff)
   summary(dem$checkTotalEndYearDiff) # all OK, 0 differences
 
-t.ori.dem <- dem %>%
+t.dem.ori <- dem %>%
     mutate(origin_iso3 = ifelse(origin == "UKN", "98", as.character(origin_iso3))) %>% # origin ISO3 = 98 for unknowns
     group_by(origin_iso3) %>%
     summarise_at(vars(female_0_4:female_12_17, female_18_59, female_60,
@@ -75,7 +103,10 @@ t.ori.dem <- dem %>%
     mutate(totalEndYear = rowSums(select(.,`female_0_4`:`male_60`), na.rm = T)) %>%
     arrange(desc(totalEndYear))
 
-t.ori.dem.adult <- dem %>%
+## selected adult respondent (random sample of adult survey population)
+
+# ASR
+t.dem.ori.adult <- dem %>%
   mutate(origin_iso3 = ifelse(origin == "UKN", "98", as.character(origin_iso3))) %>% # origin ISO3 = 98 for unknowns
   group_by(origin_iso3) %>%
   summarise_at(vars(female_18_59, female_60,
@@ -84,11 +115,9 @@ t.ori.dem.adult <- dem %>%
   mutate(totalEndYear = rowSums(select(.,`female_18_59`:`male_60`), na.rm = T)) %>%
   arrange(desc(totalEndYear))
 
-## compare to survey data
-
-# selected adult respondent (should be random sample of adult survey population)
-t.adultind.refori.dem <- hh %>%
-  filter(citizenship != "GEO") %>%
+# compare to survey data
+t.adultind.ori.agesex <- hh %>%
+  filter(citizenship != "GEO") %>% # remove nationals
   unite("ageSex", R02, R03cat2, remove = T) %>%
   group_by(citizenship, ageSex) %>%
   summarise(n = n()) %>%
@@ -97,6 +126,7 @@ t.adultind.refori.dem <- hh %>%
   mutate(total = rowSums(select(.,`Female_18-59`:`Male_60+`), na.rm = T)) %>%
   select(citizenship, `Female_18-59`, `Female_60+`, `Male_18-59`, `Male_60+`, total) %>%
   arrange(desc(total))
+
 
 # all non-national HH members
 
