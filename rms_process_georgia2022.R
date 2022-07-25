@@ -152,14 +152,18 @@ s1 <- s1 %>% # demographics / disaggregation variables
   mutate(
     R03cat = cut(R03, # UNHCR age brackets
                  breaks = c(-1, 4, 11, 17, 24, 49, 59, Inf),
-                  labels = c("0-4", "5-11", "12-17", "18-24", "25-49", "50-59", "60+")),
+                  labels = c(1, 2, 3, 4, 5, 6, 7)),
     R03cat2 = cut(R03, # UNHCR broad age brackets
                  breaks = c(-1, 4, 11, 17, 59, Inf),
-                 labels = c("0-4", "5-11", "12-17", "18-59", "60+"))
+                 labels = c(1, 2, 3, 4, 5))
   ) %>%
   mutate(
-    R03cat = labelled(R03cat, label = "UNHCR fine age brackets"),
-    R03cat2 = labelled(R03cat2, label = "UNHCR broad age brackets (18-59)")
+    R03cat = labelled(R03cat, labels =
+                        c("0-4"=1, "5-11"=2, "12-17"=3, "18-24"=4, "25-49"=5, "50-59"=6, "60+"=7),
+                        label = "UNHCR fine age brackets"),
+    R03cat2 = labelled(R03cat2,
+                       labels = c("0-4"=1, "5-11"=2, "12-17"=3, "18-59"=4, "60+"=5),
+                       label = "UNHCR broad age brackets (18-59)")
   ) %>%
   mutate( # primary citizenship from REF01 and REF02
     citizenship = case_when(

@@ -27,6 +27,7 @@ library(openxlsx)
 
 ### options
 #options(scipen = 999)
+options(warn = 0)
 
 ### functions
 source("rmsfunctions.R")
@@ -53,11 +54,11 @@ load("data/rms_clean_weighted_georgia2022.RData")
 
 ### By demographics of all HH members
 
-t.gender <- rmstable(R02x, indref.design %>% mutate(R02x = R02), R02, R03cat, DISABILITY3, studyunit = "Individual")
+t.gender <- rmstable(R02x, hhmref.design %>% mutate(R02x = R02), R02, R03cat, DISABILITY3, studyunit = "Individual")
 
-t.age <- rmstable(R03catx, indref.design %>% mutate(R03catx = R03cat), R02, R03cat, DISABILITY3, studyunit = "Individual")
+t.age <- rmstable(R03catx, hhmref.design %>% mutate(R03catx = R03cat), R02, R03cat, DISABILITY3, studyunit = "Individual")
 
-t.disability <- rmstable(DISABILITY3x, indref.design %>% mutate(DISABILITY3x = DISABILITY3), R02, R03cat, DISABILITY3, studyunit = "Individual")
+t.disability <- rmstable(DISABILITY3x, hhmref.design %>% mutate(DISABILITY3x = DISABILITY3), R02, R03cat, DISABILITY3, studyunit = "Individual")
 
 t.hhsize <- rmstable(hhsizecat, hh.design, headHHR02, headHHR03, hhdisability3, studyunit = "Households (HH size includes national members)")
 
@@ -67,23 +68,23 @@ t.hhsize <- rmstable(hhsizecat, hh.design, headHHR02, headHHR03, hhdisability3, 
 
 
 ### Core impact 2.3, access to health services
-t.imp2.3 <- rmstable(healthaccess, hhref.design, R02, R03cat, DISABILITY3, indicatorname = "Core impact 2.3", studyunit = "Adult individual")
+t.imp2.3 <- rmstable(healthaccess, indref.design, R02, R03cat, DISABILITY3, indicatorname = "Core impact 2.3", studyunit = "Adult individual")
 
 
 ### Core impact 3.3, Feeling safe walking alone at night, SDG 16.1.4
-t.imp3.3 <- rmstable(SAF01SDG, hhref.design, R02, R03cat, DISABILITY3, indicatorname = "Core impact 3.3", studyunit = "Adult individual")
+t.imp3.3 <- rmstable(SAF01SDG, indref.design, R02, R03cat, DISABILITY3, indicatorname = "Core impact 3.3", studyunit = "Adult individual")
 
 
 ### Core outcome 1.3, legally recognized identity documents or credentials
-t.out1.3 <- rmstable(documents,indref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 1.3", studyunit = "Individual")
+t.out1.3 <- rmstable(documents, hhmref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 1.3", studyunit = "Individual")
 
 
 ### Core outcome 8.2, primary reliance on clean fuels and technology, SDG 7.1.2
-t.out8.2 <- rmstable(cookingfuel, indref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 8.2", studyunit = "Individual")
+t.out8.2 <- rmstable(cookingfuel, hhmref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 8.2", studyunit = "Individual")
 
 
 ### Core outcome 13.2, self-reported change in income
-t.out13.2 <- rmstable(INC01, hhref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 8.2", studyunit = "Adult individual")
+t.out13.2 <- rmstable(INC01, indref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 8.2", studyunit = "Adult individual")
 
 
 #### IV. Merge indicator tables and write to excel #####
