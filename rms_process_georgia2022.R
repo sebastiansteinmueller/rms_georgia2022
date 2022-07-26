@@ -383,7 +383,8 @@ s1.hhlevel <- s1 %>%
   summarise(
     hhsize = n(), # hh size
     hhdisability3aux = sum(DISABILITY3 == 1), # number of disabled household members
-    hhNationals = sum(citizenship == "GEO") # number of National citizens in HH (adjust national code for other RMS)
+    hhNationals = sum(citizenship == "GEO"), # number of National citizens in HH (adjust national code for other RMS)
+    hhadults = sum(R03 >=18) # number of adults in HH
   ) %>%
   ungroup() %>%
   mutate(hhdisability3 = case_when( #  disability at HH level (at least one disabled HH member (DISABILITY3 from WG) vs none)
@@ -475,7 +476,7 @@ dim(hh)
 dim(hh)
 dim(s1)
 s1 <- s1 %>%
-  left_join(hh %>% select(`_index`, cookingfuel, originAux2), by = c("_parent_index" = "_index"))
+  left_join(hh %>% select(`_index`, cookingfuel, originAux2, hhadults), by = c("_parent_index" = "_index"))
 dim(s1)
 
 

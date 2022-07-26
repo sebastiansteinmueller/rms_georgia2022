@@ -277,20 +277,27 @@ indref.auxdesign <- hh %>%
   filter(origin != "GEO") %>%
   to_factor() %>% # convert all labelled objects to factors
   rename(index = `_index`) %>% # srvyr needs clean names
-  mutate(dweightAdultInd = N.AdultInd/n(), # design weights (inverse selection probabilities) under assumed SRSWOR
-         fpcAdultInd = n()/N.AdultInd) %>% # finite population correction
+  mutate(selectionprob = (1/hhadults)*(sum(hhadults)/N.AdultInd),
+        dweightAdultInd =1/selectionprob, # design weights (inverse selection probabilities) under assumed SRSWOR adjusted for number of adults in HH and scaled to total number of adults in population
+         fpcAdultInd = N.AdultInd) %>% # finite population correction
   as_survey_design(ids = NULL, #  no clusters
                    strata = NULL,
                    weights = dweightAdultInd,
                    fpc = fpcAdultInd)
 
+# View(indref.auxdesign$variables %>% select(hhadults, selectionprob, dweightAdultInd))
 
 # check:
 indref.auxdesign.agecheck <- indref.auxdesign %>%
   group_by(R03cat2) %>%
   summarise(n = survey_total(),
             perc = survey_mean())
-prop.table(table(hh[hh$origin != "GEO",]$R03cat2)) # OK, no adjustment in point estimate for srswor
+prop.table(table(hh[hh$origin != "GEO",]$R03cat2)) # OK, slight changes
+
+indref.auxdesign.totalcheck <- indref.auxdesign %>%
+      summarise(n = survey_total()) # OK, 1940
+
+
 
 # post-stratify individual design to ASR end-2021 population counts by origin and sex:
 indref.design <- postStratify(design = indref.auxdesign,
@@ -387,6 +394,9 @@ hhmref.auxdesign.disabilitycheck <- hhmref.auxdesign %>%
             perc = survey_mean())
 prop.table(table(s1[s1$origin != "GEO",]$DISABILITY3)) # OK, no adjustment in point estimate for srswor
 
+hhmref.auxdesign %>% summarise(survey_total())
+
+
 # post-stratify household member design to ASR end-2021 population counts by origin, age and sex:
 hhmref.design <- postStratify(design = hhmref.auxdesign,
                               strata = ~originAgeSex.ps,
@@ -415,7 +425,7 @@ t.hhmref.documents
 prop.table(table(s1[s1$origin!="GEO",]$documents)) # OK (minor changes)
 
 
-#### IV. Make survey objects #####
+#### IV. Make other survey objects #####
 
 ### DEFINE YOUR SURVEY OBJECTS HERE ###
 
@@ -438,13 +448,6 @@ hhref.design <- hh %>%
 
 ## household member design with all interviewed HHs
 hhm.design <- s1 %>%
-  to_factor() %>% # convert all labelled objects to factors
-  rename(index = `_index`, parent_index = `_parent_index`) %>% # srvyr needs clean names
-  as_survey_design(ids = `parent_index`) # <- DEFINE YOUR INDIVIDUAL SURVEY OBJECT HERE
-
-## household member design only with non-nationals
-hhmref.design <- s1 %>%
-  filter(citizenship != "GEO") %>% # ADJUST COUNTRY CODE
   to_factor() %>% # convert all labelled objects to factors
   rename(index = `_index`, parent_index = `_parent_index`) %>% # srvyr needs clean names
   as_survey_design(ids = `parent_index`) # <- DEFINE YOUR INDIVIDUAL SURVEY OBJECT HERE
