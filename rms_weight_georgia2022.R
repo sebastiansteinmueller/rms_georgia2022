@@ -4,7 +4,7 @@
 
 #### Queries: UNHCR Statistics and Demographics Section, stats@unhcr.org
 #### Project: RMS Georgia Pilot 2022
-#### Description: Weight, calibrate, adjust population and create survey object from clean data for the RMS Pilot in the Georgia Tbilisi Administered Territory
+#### Description: Weight, calibrate, adjust population and create survey objects from clean data for the RMS Pilot in the Georgia Tbilisi Administered Territory
 
 
 rm(list=ls()) # clear workspace
@@ -71,7 +71,7 @@ s1 <- s1 %>%
 table(s1$originHcrRegion, useNA = "ifany")
 
 
-#### II. Compare ASR and survey data and define IRRS-compliant populations #####
+#### II. Explorative: Compare ASR and survey data for post-stratification and define IRRS-compliant populations #####
 
 ### check which individuals and HHs are (all-) refugees/asylum-seekers
 # for Georgia: the sampling frame was refugee/asylum-seeker/humanitarian status holder heads of HH
@@ -101,7 +101,7 @@ t.hh.nat <- hh %>%
 
 
 
-### calculate post-stratification counts from ASR end-2021 demographic table for refugees/asylum-seekers in Georgia
+### prepare post-stratification counts from ASR end-2021 demographic table for refugees/asylum-seekers in Georgia
 
 dem <- dem %>%
   filter(year == 2021, asylum_iso3 == "GEO", populationType %in% c("REF", "ASY"), totalEndYear >0) %>% # ROC (refugee-like) are in Abkhazia according to PSR internal notes
@@ -144,7 +144,9 @@ demori <- dem %>%
     )
 table(demori$originHcrRegion, useNA = "ifany")
 
-## selected adult respondent (random sample of adult survey population)
+
+
+## explore for selected adult respondent (random sample of adult survey population)
 
 # ASR
 t.dem.ori.adult <- dem %>%
@@ -209,11 +211,26 @@ t.adultrefind.demori <- demori %>%
   arrange(desc(n))
 
 
+## HH members
+t.ref.demori <- demori %>%
+  select(origin_iso3, originHcrRegion, female_0_4, female_5_11, female_12_17, female_18_59, female_60,
+                                        male_0_4, male_5_11, male_12_17, male_18_59, male_60 ) %>%
+  mutate(Child_Female = rowSums(select(., female_0_4, female_5_11, female_12_17), na.rm=T),
+         Child_Male = rowSums(select(., male_0_4, male_5_11, male_12_17), na.rm=T),
+         Adult_Female = rowSums(select(., female_18_59, female_60), na.rm=T),
+         Adult_Male = rowSums(select(., male_18_59, male_60), na.rm=T)) %>%
+  mutate(n = rowSums(select(., Child_Female, Child_Male, Adult_Female, Adult_Male), na.rm = T)) %>%
+  mutate(percChild_Female = Child_Female/n,
+         percChild_Male = Child_Male/n,
+         percAdult_Female = Adult_Female/n,
+         percAdult_Male = Adult_Male/n) %>%
+  arrange(desc(n))
 
-  # all non-national HH members
 
+#### III. Define weights / post-stratification distributions and variables and create survey objects #####
 
-#### III. Define weights / post-stratification distributions and variables #####
+### III.A Post-stratification for adult individual interviews ###
+
 
 hh <- hh %>% # define variable originSex.ps for post-stratification of individual adult interviews by origin and sex
   mutate(origin.ps = case_when(
@@ -253,22 +270,21 @@ pscheck.adultind <- as.data.frame(table(hh[hh$origin!="GEO",]$originSex.ps, useN
 
 N.AdultInd <-  sum(PS.AdultInd$Freq) # total population size for individual adult interviews
 
-#### IV. Make survey objects #####
 
-### DEFINE YOUR SURVEY OBJECTS HERE ###
+## define survey object ##
 
-
-## individual interview design
 indref.auxdesign <- hh %>%
   filter(origin != "GEO") %>%
   to_factor() %>% # convert all labelled objects to factors
   rename(index = `_index`) %>% # srvyr needs clean names
   mutate(dweightAdultInd = N.AdultInd/n(), # design weights (inverse selection probabilities) under assumed SRSWOR
          fpcAdultInd = n()/N.AdultInd) %>% # finite population correction
-  as_survey_design(ids = NULL, #  <- DEFINE YOUR HH SURVEY OBJECT HERE
+  as_survey_design(ids = NULL, #  no clusters
                    strata = NULL,
                    weights = dweightAdultInd,
-                   fpc = fpcAdultInd) #
+                   fpc = fpcAdultInd)
+
+
 # check:
 indref.auxdesign.agecheck <- indref.auxdesign %>%
   group_by(R03cat2) %>%
@@ -278,8 +294,8 @@ prop.table(table(hh[hh$origin != "GEO",]$R03cat2)) # OK, no adjustment in point 
 
 # post-stratify individual design to ASR end-2021 population counts by origin and sex:
 indref.design <- postStratify(design = indref.auxdesign,
-                                 strata = ~originSex.ps,
-                                 population = PS.AdultInd) %>%
+                              strata = ~originSex.ps,
+                              population = PS.AdultInd) %>%
   as_survey()
 
 
@@ -288,7 +304,7 @@ indref.design <- postStratify(design = indref.auxdesign,
 t.indref.originSex <- indref.design %>%
   group_by(originSex.ps) %>%
   summarise(n = survey_total(),
-          perc = survey_mean())
+            perc = survey_mean())
 # compare to ASR:
 t.indref.originSex
 PS.AdultInd # OK (totals match)
@@ -302,6 +318,108 @@ t.indref.saf01 <- indref.design %>%
 # compare to unweighted:
 t.indref.saf01
 prop.table(table(hh[hh$origin!="GEO",]$SAF01SDG)) # OK (minor changes)
+
+
+
+### III.B Post-stratification for all refugee household members ###
+
+s1 <- s1 %>% # define variable originSex.ps for post-stratification of individual adult interviews by origin and sex
+  mutate(origin.ps = case_when(
+    origin == "IRN" ~ "IRN",
+    origin == "IRQ" ~ "IRQ",
+    origin == "RUS" ~ "RUS",
+    origin == "UKR" ~ "UKR",
+    !(origin %in% c("IRN", "IRQ", "RUS", "UKR")) & originHcrRegion == "Middle East and North Africa" ~ "OtherMENA",
+    !(origin %in% c("IRN", "IRQ", "RUS", "UKR")) & originHcrRegion != "Middle East and North Africa" ~ "OtherNotMENA"
+    ),
+    R03bin = case_when(
+      R03 < 18 ~ "Child",
+      R03 >= 18 ~ "Adult"
+    )
+  ) %>%
+  unite("originAgeSex.ps", origin.ps, R03bin, R02, remove = F)
+
+
+table(s1[s1$origin!="GEO",]$originAgeSex.ps, useNA = "ifany")
+
+t.refhhm.demori.ps <- t.ref.demori %>%
+  select(originHcrRegion, origin_iso3, Child_Female, Child_Male, Adult_Female, Adult_Male) %>%
+  pivot_longer(cols = c(Child_Female, Child_Male, Adult_Female, Adult_Male), names_to = "agesex") %>%
+  mutate(origin.ps = case_when(
+    origin_iso3 == "IRN" ~ "IRN",
+    origin_iso3 == "IRQ" ~ "IRQ",
+    origin_iso3 == "RUS" ~ "RUS",
+    origin_iso3 == "UKR" ~ "UKR",
+    !(origin_iso3 %in% c("IRN", "IRQ", "RUS", "UKR")) & originHcrRegion == "Middle East and North Africa" ~ "OtherMENA",
+    !(origin_iso3 %in% c("IRN", "IRQ", "RUS", "UKR")) & originHcrRegion != "Middle East and North Africa" ~ "OtherNotMENA"
+  )
+  ) %>%
+  unite("originAgeSex.ps", origin.ps, agesex, remove = F)
+
+
+PS.hhm <- t.refhhm.demori.ps %>%
+  group_by(originAgeSex.ps) %>%
+  summarise(Freq = sum(value))
+
+pscheck.hhm <- as.data.frame(table(s1[s1$origin!="GEO",]$originAgeSex.ps, useNA = "ifany"))
+
+N.hhm <-  sum(PS.hhm$Freq) # total population size for household member indicators
+
+
+
+## define survey object ##
+
+hhmref.auxdesign <- s1 %>%
+  filter(origin != "GEO") %>%
+  to_factor() %>% # convert all labelled objects to factors
+  rename(index = `_index`, parent_index = `_parent_index`) %>% # srvyr needs clean names
+  mutate(dweightHHM = N.hhm/n(), # design weights (inverse selection probabilities) under assumed SRSWOR
+         fpcAdultInd = n()/N.hhm) %>% # finite population correction
+  as_survey_design(ids = parent_index, #  households as clusters
+                   strata = NULL,
+                   weights = dweightHHM,
+                   fpc = fpcAdultInd)
+
+# check:
+hhmref.auxdesign.disabilitycheck <- hhmref.auxdesign %>%
+  group_by(DISABILITY3) %>%
+  summarise(n = survey_total(),
+            perc = survey_mean())
+prop.table(table(s1[s1$origin != "GEO",]$DISABILITY3)) # OK, no adjustment in point estimate for srswor
+
+# post-stratify household member design to ASR end-2021 population counts by origin, age and sex:
+hhmref.design <- postStratify(design = hhmref.auxdesign,
+                              strata = ~originAgeSex.ps,
+                              population = PS.hhm) %>%
+  as_survey()
+
+# checks:
+# 1) survey totals over post-stratification variable same as ASR (population) counts?
+t.hhmref.originSex <- hhmref.design %>%
+  group_by(originAgeSex.ps) %>%
+  summarise(n = survey_total(),
+            perc = survey_mean())
+# compare to ASR:
+t.hhmref.originSex
+PS.hhm # OK (totals match)
+
+
+# 2) check other variables (does stratification change distributions?)
+t.hhmref.documents <- hhmref.design %>%
+  group_by(documents) %>%
+  summarise(n = survey_total(),
+            perc = survey_mean())
+
+# compare to unweighted:
+t.hhmref.documents
+prop.table(table(s1[s1$origin!="GEO",]$documents)) # OK (minor changes)
+
+
+#### IV. Make survey objects #####
+
+### DEFINE YOUR SURVEY OBJECTS HERE ###
+
+
 
 
 ## household design with all interviewed HHs
