@@ -4,7 +4,7 @@
 
 #### Queries: UNHCR Statistics and Demographics Section, stats@unhcr.org
 #### Project: RMS Georgia Pilot 2022
-#### Description: Create survey object and indicator tables for COMPASS with clean data from the RMS Pilot in the Georgia Tbilisi Administered Territory
+#### Description: Create indicator tables for COMPASS with clean weighted/calibrated data from the RMS Pilot in the Georgia Tbilisi Administered Territory
 
 
 rm(list=ls()) # clear workspace
