@@ -71,7 +71,7 @@ s1 <- s1 %>%
 table(s1$originHcrRegion, useNA = "ifany")
 
 
-#### II. Explorative: Compare ASR and survey data for post-stratification and define IRRS-compliant populations #####
+#### II. Exploratory: Compare ASR and survey data for post-stratification and define IRRS-compliant populations #####
 
 ### check which individuals and HHs are (all-) refugees/asylum-seekers
 # for Georgia: the sampling frame was refugee/asylum-seeker/humanitarian status holder heads of HH

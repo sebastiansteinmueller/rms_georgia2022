@@ -301,6 +301,35 @@ s1 <- s1 %>%
 # View(s1 %>% select(R03cat, REG01a, REG01b, REG01h, REG01i, REG01d, REG01e, REG01f, doc5plus, REG04a, REG04f, REG04g, REG04e, doc04, documents) %>% arrange(documents)) # OK
 
 
+## outcome 13.3, unemployed.
+# According to https://www.ilo.org/wcmsp5/groups/public/---dgreports/---stat/documents/normativeinstrument/wcms_230304.pdf
+s1 <- s1 %>%
+  mutate(
+    workingAge = case_when( # ADJUST BY COUNTRY CONTEXT. ILO recommends 15+, in Georgia we only interviewed 18+ for labour force
+      R03 < 18 ~ 0,
+      R03 >= 18 ~ 1
+    ),
+    employed = case_when(
+
+    )
+  ) %>%
+  mutate(
+    unemployed = case_when(
+      employed == 1 ~ 0,
+      employed != 1 & UNEM09 == 1 & UNEM09 == 1 ~ 1,
+      employed != 1 & (UNEM09 != 1 | UNEM09 != 1) ~ NA_real_ # people not in employment, not job-seeking and/or not available to start work are outside the labour force
+    )
+  ) %>%
+  mutate(
+    labourForce = case_when(
+      workingAge == 1 & !(employed == 1 | unemployed == 1) ~ 0,
+      workingAge == 1 & (employed == 1 | unemployed == 1) ~ 1 # working or looking for work and available
+      workingAge == 0 ~ NA_real_
+    )
+
+  )
+
+
 ### indicators in HH dataset
 
 ## impact 2.3, access to health services
