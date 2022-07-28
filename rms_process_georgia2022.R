@@ -301,34 +301,100 @@ s1 <- s1 %>%
 # View(s1 %>% select(R03cat, REG01a, REG01b, REG01h, REG01i, REG01d, REG01e, REG01f, doc5plus, REG04a, REG04f, REG04g, REG04e, doc04, documents) %>% arrange(documents)) # OK
 
 
-## outcome 13.3, unemployed.
-# According to https://www.ilo.org/wcmsp5/groups/public/---dgreports/---stat/documents/normativeinstrument/wcms_230304.pdf
-s1 <- s1 %>%
+## outcome 13.3, unemployment
+# Standard: https://www.ilo.org/wcmsp5/groups/public/---dgreports/---stat/documents/normativeinstrument/wcms_230304.pdf
+# variable derivation: https://www.ilo.org/ilostat-files/LFS/ILO_CAPI_LFS_VARIABLE_DERIVATION_GUIDE%20(A1V3).pdf
+hh <- hh %>%
+  left_join(s1 %>% select(indid, R03), by = "indid") %>% # need age variable from HH member dataset for working age population definition
   mutate(
-    workingAge = case_when( # ADJUST BY COUNTRY CONTEXT. ILO recommends 15+, in Georgia we only interviewed 18+ for labour force
+    workingAge = case_when( # ADJUST BY COUNTRY CONTEXT. ILO recommends 15+, in Georgia only 18+ interviewed for labour force
       R03 < 18 ~ 0,
       R03 >= 18 ~ 1
     ),
-    employed = case_when(
-
+    atWork = case_when( # currently in paid employment?
+      UNEM01 == "1"  ~ 1, # paid employed
+      UNEM01 == "2" & UNEM02 == "2" & UNEM03 == "2" ~ 2, # no current work -> establish temporary absence (UNEM04, UNEM05)
+      UNEM01 == "2" & (UNEM02 == "1" | UNEM03 == "1") ~ 3 # own business / paid family job -> establish work in agriculture/fishing ( UNEM07)
     )
   ) %>%
   mutate(
-    unemployed = case_when(
+    tempAbs = case_when( # temporarily absent from paid employment?
+      atWork == 2 & UNEM04 == "1" ~ 1, # paid employed
+      atWork == 2 & UNEM04 == "2" & UNEM05 == "1" ~ 3, # temporary absence from own business / paid family job -> establish work in agriculture/fishing (UNEM07)
+      atWork == 2 & UNEM04 == "2" &  UNEM05 == "2" ~ 2 # no work, no temporary absence -> establish work in agriculture/fishing (UNEM06)
+    )
+  ) %>%
+  mutate(
+    agriFish = case_when(
+      atWork == 3 & UNEM07 == "3" ~ 1, # own business or family paid job not in agriculture/fishing -> paid employed
+      atWork == 3 & UNEM07 %in% c("1", "2") ~ 2, # own business or family paid job in agriculture/fishing -> establish destination of production (UNEM08)
+      tempAbs == 3 & UNEM07 == "3" ~ 1, # own business or family paid job not in agriculture/fishing -> paid employed
+      tempAbs == 3 & UNEM07 %in% c("1", "2") ~ 2, # own business or family paid job in agriculture/fishing -> establish destination of production (UNEM08)
+      tempAbs == 2 & UNEM06 == "3" ~ 0, # not paid employed
+      tempAbs == 2 & UNEM06 %in% c("1", "2") ~ 2 # own business or family paid job in agriculture/fishing -> establish destination of production (UNEM08)
+    )
+  ) %>%
+  mutate(
+    agriFishDest = case_when(
+      agriFish == 2 & UNEM08 %in% c("3", "4") ~ 0, # only/mainly for family use -> not paid employed
+      agriFish == 2 & UNEM08 %in% c("1", "2") ~ 1 # only/mainly for sale -> paid employed
+    )
+  ) %>%
+  mutate(
+    employed = case_when( # variable for paid employment
+      (agriFishDest == 0 | agriFish ==0) & UNEM09 == "1" & UNEM10 == "1" ~ 0, # not paid employed but looking and available -> unemployed in the labour force
+      atWork == 1 | tempAbs == 1 | agriFish == 1 | agriFishDest == 1 ~ 1, # paid employed in the labour force
+      (agriFishDest == 0 | agriFish == 0) & (UNEM09 != "1" | UNEM10 != "1") ~ NA_real_ # not paid employed, not job-seeking and/or not available to start work -> outside the labour force
+    )
+  ) %>%
+  mutate(
+    unemployed = case_when( # variable for unemployment
       employed == 1 ~ 0,
-      employed != 1 & UNEM09 == 1 & UNEM09 == 1 ~ 1,
-      employed != 1 & (UNEM09 != 1 | UNEM09 != 1) ~ NA_real_ # people not in employment, not job-seeking and/or not available to start work are outside the labour force
+      employed == 0 & UNEM09 == "1" & UNEM10 == "1" ~ 1,
+      employed == 0 & (UNEM09 != "1" | UNEM10 != "1") ~ NA_real_ # not in employment, not job-seeking and/or not available to start work -> outside the labour force
     )
   ) %>%
   mutate(
     labourForce = case_when(
-      workingAge == 1 & !(employed == 1 | unemployed == 1) ~ 0,
-      workingAge == 1 & (employed == 1 | unemployed == 1) ~ 1 # working or looking for work and available
+      workingAge == 1 & (!(employed == 1 | unemployed == 1) | is.na(employed) | is.na(unemployed)) ~ 0,
+      workingAge == 1 & (employed == 1 | unemployed == 1) ~ 1, # working or looking for work and available
       workingAge == 0 ~ NA_real_
     )
 
+  ) %>%
+  mutate(
+    workingAge = labelled(workingAge,
+                           labels = c(
+                             "Not working-age" = 0,
+                             "Working-age" = 1
+                           ),
+                           label = "Working-age population"
+                  ),
+    labourForce = labelled(labourForce,
+                          labels = c(
+                            "Outside the labour force" = 0,
+                            "In the labour force" = 1
+                          ),
+                          label = "Labour force"
+                  ),
+    unemployed = labelled(unemployed,
+                          labels = c(
+                            "Employed" = 0,
+                            "Unemployed" = 1
+                           ),
+                        label = "Employment status"
+    )
   )
 
+# check
+
+table(hh$labourForce, hh$employed, useNA = "ifany")
+table(hh$labourForce, hh$unemployed, useNA = "ifany")
+
+table(hh$employed, hh$unemployed, useNA = "ifany")
+
+
+View(hh %>% select(workingAge, UNEM01:UNEM10, atWork, tempAbs, agriFish, agriFishDest, labourForce, employed, unemployed) %>% arrange(labourForce, employed, unemployed))
 
 ### indicators in HH dataset
 
