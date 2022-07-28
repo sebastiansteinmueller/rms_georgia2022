@@ -360,7 +360,6 @@ hh <- hh %>%
       workingAge == 1 & (employed == 1 | unemployed == 1) ~ 1, # working or looking for work and available
       workingAge == 0 ~ NA_real_
     )
-
   ) %>%
   mutate(
     workingAge = labelled(workingAge,
@@ -377,7 +376,7 @@ hh <- hh %>%
                           ),
                           label = "Labour force"
                   ),
-    unemployed = labelled(unemployed,
+    employmentStatus = labelled(unemployed,
                           labels = c(
                             "Employed" = 0,
                             "Unemployed" = 1
@@ -596,10 +595,10 @@ hh <- hh %>%
 #### III. Remove personal identifiers #####
 
 hh <- hh %>%
-  select(-c(adult_name, fam_name1:fam_name9, namechild2less, women_name_b_total, -originAux, -originAux2))
+  select(-c(adult_name, fam_name1:fam_name9, namechild2less, women_name_b_total, originAux, originAux2, atWork, tempAbs, agriFish, agriFishDest, employed, unemployed))
 
 s1 <- s1 %>%
-  select(-c(R01, indid2, R05b, calculation_002, AgeMonths, calculation3, calculation4, R04, adult, name_individual, ind_age_month, -originAux, -originAux2))
+  select(-c(R01, indid2, R05b, calculation_002, AgeMonths, calculation3, calculation4, R04, adult, name_individual, ind_age_month, originAux, originAux2))
 
 
 

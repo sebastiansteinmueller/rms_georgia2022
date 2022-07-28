@@ -92,7 +92,7 @@ t.labourForce <- rmstable(labourForce, indref.design %>% filter(workingAge == 1)
 
 
 ### Core outcome 13.3, unemployment rate
-t.out13.3 <- rmstable(unemployed, indref.design %>% filter(labourForce == 1), R02, R03cat, DISABILITY3, indicatorname = "Core outcome 13.3", studyunit = "Adult individual")
+t.out13.3 <- rmstable(employmentStatus, indref.design %>% filter(labourForce == 1), R02, R03cat, DISABILITY3, indicatorname = "Core outcome 13.3", studyunit = "Adult individual")
 
 #### IV. Merge indicator tables and write to excel #####
 
