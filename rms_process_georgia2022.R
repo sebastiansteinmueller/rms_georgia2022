@@ -266,7 +266,7 @@ s1 <- s1 %>% # demographics / disaggregation variables
 # View(s1 %>% select(DIS01, DIS02, DIS03, DIS04, DIS05, DIS06, disSum234, disSum34, DISABILITY1, DISABILITY2, DISABILITY3, DISABILITY4)) # OK
 
 
-### indicators in individual dataset
+### indicators in individual dataset  ###
 
 ## outcome 1.3, documents/credentials
 s1 <- s1 %>%
@@ -299,6 +299,10 @@ s1 <- s1 %>%
 
 # check:
 # View(s1 %>% select(R03cat, REG01a, REG01b, REG01h, REG01i, REG01d, REG01e, REG01f, doc5plus, REG04a, REG04f, REG04g, REG04e, doc04, documents) %>% arrange(documents)) # OK
+
+
+
+### indicators in HH dataset ###
 
 
 ## outcome 13.3, unemployment
@@ -395,7 +399,6 @@ table(hh$employed, hh$unemployed, useNA = "ifany")
 
 View(hh %>% select(workingAge, UNEM01:UNEM10, atWork, tempAbs, agriFish, agriFishDest, labourForce, employed, unemployed) %>% arrange(labourForce, employed, unemployed))
 
-### indicators in HH dataset
 
 ## impact 2.3, access to health services
 hh <- hh %>%
