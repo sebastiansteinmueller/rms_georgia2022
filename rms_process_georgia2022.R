@@ -397,7 +397,29 @@ table(hh$labourForce, hh$unemployed, useNA = "ifany")
 table(hh$employed, hh$unemployed, useNA = "ifany")
 
 
-View(hh %>% select(workingAge, UNEM01:UNEM10, atWork, tempAbs, agriFish, agriFishDest, labourForce, employed, unemployed) %>% arrange(labourForce, employed, unemployed))
+# View(hh %>% select(workingAge, UNEM01:UNEM10, atWork, tempAbs, agriFish, agriFishDest, labourForce, employed, unemployed) %>% arrange(labourForce, employed, unemployed))
+
+
+## outcome 13.1, bank account
+hh <- hh %>%
+  mutate(
+    banking = case_when(
+      BANK01 == "2" & (BANK02 == "2" | BANK03 =="2"| is.na(BANK03)) & BANK04 == "2" & BANK05 =="2" ~ 0,
+      BANK01 == "1" | (BANK02 == "1" & BANK03 =="1") | BANK04 == "1" | BANK05 =="1" ~ 1,
+      (BANK01 == "1" | BANK04 == "1" | BANK05 =="1") & is.na(BANK03) ~ 1
+    )
+  ) %>%
+  mutate(banking = labelled(banking,
+                            labels = c(
+                              "Has account at bank/financial institution/mobile money-service provider" = 1,
+                              "Does not have account" = 0
+                            ),
+                            label = "Account at a bank or other financial institution or with a mobile-money-service provider"
+                    )
+
+  )
+
+
 
 
 ## impact 2.3, access to health services
