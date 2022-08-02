@@ -54,13 +54,21 @@ load("data/rms_clean_weighted_georgia2022.RData")
 
 ### By demographics of all HH members
 
-t.gender <- rmstable(R02x, hhmref.design %>% mutate(R02x = R02), R02, R03cat, DISABILITY3, studyunit = "Individual")
+t.hhsize <- rmstable(hhsizecat, hh.design, headHHR02, headHHR03, hhdisability3, studyunit = "Households (HH size includes Georgian household members)")
 
-t.age <- rmstable(R03catx, hhmref.design %>% mutate(R03catx = R03cat), R02, R03cat, DISABILITY3, studyunit = "Individual")
+t.hhm.gender <- rmstable(R02x, hhmref.design %>% mutate(R02x = R02), R02, R03cat, DISABILITY3, studyunit = "Household member")
 
-t.disability <- rmstable(DISABILITY3x, hhmref.design %>% mutate(DISABILITY3x = DISABILITY3), R02, R03cat, DISABILITY3, studyunit = "Individual")
+t.hhm.age <- rmstable(R03catx, hhmref.design %>% mutate(R03catx = R03cat), R02, R03cat, DISABILITY3, studyunit = "Household member")
 
-t.hhsize <- rmstable(hhsizecat, hh.design, headHHR02, headHHR03, hhdisability3, studyunit = "Households (HH size includes national members)")
+t.hhm.disability <- rmstable(DISABILITY3x, hhmref.design %>% mutate(DISABILITY3x = DISABILITY3), R02, R03cat, DISABILITY3, studyunit = "Household member")
+
+
+### By demographics of adult individuals interviewed
+t.ind.gender <- rmstable(R02x, indref.design %>% mutate(R02x = R02), R02, R03cat, DISABILITY3, studyunit = "Adult individual")
+
+t.ind.age <- rmstable(R03catx, indref.design %>% mutate(R03catx = R03cat), R02, R03cat, DISABILITY3, studyunit = "Adult individual")
+
+t.ind.disability <- rmstable(DISABILITY3x, indref.design %>% mutate(DISABILITY3x = DISABILITY3), R02, R03cat, DISABILITY3, studyunit = "Adult individual")
 
 
 ### Core impact 2.2, residing in safe and secure settlements
@@ -76,15 +84,15 @@ t.imp3.3 <- rmstable(SAF01SDG, indref.design, R02, R03cat, DISABILITY3, indicato
 
 
 ### Core outcome 1.3, legally recognized identity documents or credentials
-t.out1.3 <- rmstable(documents, hhmref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 1.3", studyunit = "Individual")
+t.out1.3 <- rmstable(documents, hhmref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 1.3", studyunit = "Household member")
 
 
 ### Core outcome 8.2, primary reliance on clean fuels and technology, SDG 7.1.2
-t.out8.2 <- rmstable(cookingfuel, hhmref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 8.2", studyunit = "Individual")
+t.out8.2 <- rmstable(cookingfuel, hhmref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 8.2", studyunit = "Household member")
 
 
 ### Core outcome 13.2, self-reported change in income
-t.out13.2 <- rmstable(INC01, indref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 8.2", studyunit = "Adult individual")
+t.out13.2 <- rmstable(INC01, indref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 13.2", studyunit = "Adult individual")
 
 
 ### (no indicator) Labour force participation rate
@@ -97,14 +105,17 @@ t.out13.3 <- rmstable(employmentStatus, indref.design %>% filter(labourForce == 
 #### IV. Merge indicator tables and write to excel #####
 
 t.rms <- bind_rows(
-            t.gender,
-            t.age,
-            t.disability,
             t.hhsize,
-            t.imp2.3,
-            t.imp3.3,
+            t.hhm.gender,
+            t.hhm.age,
+            t.hhm.disability,
             t.out1.3,
             t.out8.2,
+            t.ind.gender,
+            t.ind.age,
+            t.ind.disability,
+            t.imp2.3,
+            t.imp3.3,
             t.out13.2,
             t.labourForce,
             t.out13.3
