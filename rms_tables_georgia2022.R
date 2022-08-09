@@ -91,9 +91,15 @@ t.out1.3 <- rmstable(documents, hhmref.design, R02, R03cat, DISABILITY3, indicat
 t.out8.2 <- rmstable(cookingfuel, hhmref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 8.2", studyunit = "Household member")
 
 
+### Core outcome 13.1, bank account
+t.out13.1 <- rmstable(banking, indref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 13.1", studyunit = "Adult individual")
+
 ### Core outcome 13.2, self-reported change in income
 t.out13.2 <- rmstable(INC01, indref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 13.2", studyunit = "Adult individual")
 
+
+### Core outcome 13.3, unemployment rate
+t.out13.3 <- rmstable(employmentStatus, indref.design %>% filter(labourForce == 1), R02, R03cat, DISABILITY3, indicatorname = "Core outcome 13.3", studyunit = "Adult individual")
 
 ### (no indicator) Labour force participation rate
 t.labourForce <- rmstable(labourForce, indref.design %>% filter(workingAge == 1), R02, R03cat, DISABILITY3, indicatorname = "Labour force participation rate", studyunit = "Adult individual")
@@ -116,6 +122,7 @@ t.rms <- bind_rows(
             t.ind.disability,
             t.imp2.3,
             t.imp3.3,
+            t.out13.1,
             t.out13.2,
             t.labourForce,
             t.out13.3
