@@ -304,7 +304,6 @@ s1 <- s1 %>%
 
 ### indicators in HH dataset ###
 
-
 ## outcome 13.3, unemployment
 # Standard: https://www.ilo.org/wcmsp5/groups/public/---dgreports/---stat/documents/normativeinstrument/wcms_230304.pdf
 # variable derivation: https://www.ilo.org/ilostat-files/LFS/ILO_CAPI_LFS_VARIABLE_DERIVATION_GUIDE%20(A1V3).pdf
@@ -488,6 +487,128 @@ hh <- hh %>%
 
 
 
+## outcome 12.1, basic drinking water services
+hh <- hh %>%
+  mutate(improvedDrinkingWater = case_when(
+    DWA01 %in% c("1","2","3","4","5","6","8","10","11","12","14","15","16")  ~ 1,
+    DWA01 %in% c("7","9","13","17","98")  ~ 0 # https://washdata.org/report/jmp-methodology-2017-update classifies DK/refuse as unimproved, and 17 (other) is assumed to be unimproved here
+  )
+  ) %>%
+  mutate(
+    improvedDrinkingWater = labelled(improvedDrinkingWater,
+                                     labels = c(
+                                       "Unimproved" = 0,
+                                       "Improved" = 1
+                                     ),
+                                     label = "Main drinking water source - improved vs unimproved"
+    )
+  ) %>%
+  mutate(
+    DWA03 = case_when(
+      DWA03b == "1" & DWA03a !=98 ~ as.numeric(DWA03a),
+      DWA03b == "2" & DWA03a !=98 ~ as.numeric(DWA03a)*60,
+      DWA03a == 98 ~ NA_real_
+    )
+  ) %>%
+  mutate(
+    DWA03 = labelled(DWA03, label = "Time for return trip to water source in minutes"
+    )
+  )  %>%
+  mutate(
+    basicDrinkingWater = case_when(
+      improvedDrinkingWater == 1 & is.na(DWA02) & (is.na(DWA03) | DWA03 <=30) ~ 1,
+      improvedDrinkingWater == 1 & is.na(DWA02) & DWA03 > 30 ~ 0,
+      improvedDrinkingWater == 1 & DWA02 %in% c("1","2") ~ 1,
+      improvedDrinkingWater == 1 & DWA02 == "3" & DWA03 <= 30 ~ 1,
+      improvedDrinkingWater == 1 & DWA02 == "3" & DWA03 > 30 ~ 0,
+      improvedDrinkingWater == 0 ~ 0
+    )
+  )  %>%
+  mutate(
+    basicDrinkingWater = labelled(basicDrinkingWater,
+                                  labels = c(
+                                    "Limited, unimproved or surface water source" = 0,
+                                    "Basic drinking water source" = 1
+                                  ),
+                                  label = "Main drinking water source (basic: improved source and at most 30 minute return trip)"
+    )
+  )
+
+
+
+## outcome 12.2, safely managed sanitation
+hh <- hh %>%
+  mutate(improvedSanitation = case_when(
+      TOI01 %in% c("11","12","13","21","22","31") ~ 1,
+      TOI01 %in% c("14","18","23","41","51","85", "96") ~ 0
+    )
+  ) %>%
+  mutate(
+    improvedSanitation = labelled(improvedSanitation,
+                                  labels = c(
+                                    "Unimproved" = 0,
+                                    "Improved" = 1
+                                  ),
+                                  label = "Sanitation facility - improved vs unimproved"
+    )
+  ) %>%
+  mutate(
+    basicSanitation = case_when(
+      improvedSanitation == 1 & TOI05 == "2" ~ 1,
+      improvedSanitation == 0 | TOI05 != "2" ~ 0
+    )
+
+  ) %>%
+  mutate(
+    basicSanitation = labelled(basicSanitation,
+                                  labels = c(
+                                    "Basic sanitation facility" = 1,
+                                    "Limited/unimproved sanitation facility or open defecation" = 0
+                                  ),
+                                label = "Sanitation facility  (basic: improved and not shared)"
+    )
+  )
+
+
+
+## electricity
+
+hh <- hh %>%
+  mutate(
+    electricity = case_when(
+      LIGHT01 == "1" & LIGHT03 != "0" ~ 1,
+      LIGHT01 == "2" | LIGHT03 == "0" ~ 0
+    )
+  ) %>%
+  mutate( electricity = labelled(electricity,
+                                     labels = c(
+                                       "Electricity in household" = 1,
+                                       "No electricity in household" = 0
+                                     ),
+                                     label = "Electricity in household"
+    )
+  )
+
+
+## impact 2.2, residing in physically safe and secure settlements with access to basic facilities
+
+hh <- hh %>%
+  mutate(
+    basicFacilities = case_when(
+      basicDrinkingWater == 1 & basicSanitation == 1 & cookingfuel == 1 & electricity == 1 ~ 1,
+      basicDrinkingWater == 0 | basicSanitation == 0 | cookingfuel == 0 | electricity == 0 ~ 0
+    )
+  ) %>%
+  mutate(basicFacilities = labelled(basicFacilities,
+                                 labels = c(
+                                   "Household has access to basic facilities" = 1,
+                                   "Household does not have access to basic facilities" = 0
+                                 ),
+                                 label = "Household access to basic facilities (drinking water, sanitation, clean cooking fuel, electricity)"
+    )
+  )
+
+
 
 
 ## remove auxiliary variables
@@ -595,7 +716,7 @@ dim(hh)
 dim(hh)
 dim(s1)
 s1 <- s1 %>%
-  left_join(hh %>% select(`_index`, cookingfuel, originAux2, hhadults), by = c("_parent_index" = "_index"))
+  left_join(hh %>% select(`_index`, cookingfuel, electricity, basicSanitation, basicDrinkingWater, basicFacilities, originAux2, hhadults), by = c("_parent_index" = "_index"))
 dim(s1)
 
 

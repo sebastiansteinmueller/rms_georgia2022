@@ -71,8 +71,8 @@ t.ind.age <- rmstable(R03catx, indref.design %>% mutate(R03catx = R03cat), R02, 
 t.ind.disability <- rmstable(DISABILITY3x, indref.design %>% mutate(DISABILITY3x = DISABILITY3), R02, R03cat, DISABILITY3, studyunit = "Adult individual")
 
 
-### Core impact 2.2, residing in safe and secure settlements
-# t.out2.2 <- rmstable(settlements, hh.design, R02, R03cat, DISABILITY3)
+### Core impact 2.2, (residing in safe and secure settlements) with access to basic facilities
+t.imp2.2 <- rmstable(basicFacilities, hhmref.design, R02, R03cat, DISABILITY3, indicatorname = "Core impact 2.2", studyunit = "Household member")
 
 
 ### Core impact 2.3, access to health services
@@ -120,6 +120,7 @@ t.rms <- bind_rows(
             t.ind.gender,
             t.ind.age,
             t.ind.disability,
+            t.imp2.2,
             t.imp2.3,
             t.imp3.3,
             t.out13.1,
