@@ -90,6 +90,11 @@ t.out1.3 <- rmstable(documents, hhmref.design, R02, R03cat, DISABILITY3, indicat
 ### Core outcome 8.2, primary reliance on clean fuels and technology, SDG 7.1.2
 t.out8.2 <- rmstable(cookingfuel, hhmref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 8.2", studyunit = "Household member")
 
+### Core outcome 12.1, basic drinking water services
+t.out12.1 <- rmstable(basicDrinkingWater, hhmref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 12.1", studyunit = "Household member")
+
+### Core outcome 12.2, basic sanitation facility
+t.out12.2 <- rmstable(basicSanitation, hhmref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 12.2", studyunit = "Household member")
 
 ### Core outcome 13.1, bank account
 t.out13.1 <- rmstable(banking, indref.design, R02, R03cat, DISABILITY3, indicatorname = "Core outcome 13.1", studyunit = "Adult individual")
@@ -115,14 +120,16 @@ t.rms <- bind_rows(
             t.hhm.gender,
             t.hhm.age,
             t.hhm.disability,
+            t.imp2.2,
             t.out1.3,
             t.out8.2,
             t.ind.gender,
             t.ind.age,
             t.ind.disability,
-            t.imp2.2,
             t.imp2.3,
             t.imp3.3,
+            t.out12.1,
+            t.out12.2,
             t.out13.1,
             t.out13.2,
             t.labourForce,

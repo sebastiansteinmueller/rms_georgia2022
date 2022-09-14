@@ -562,8 +562,8 @@ hh <- hh %>%
   mutate(
     basicSanitation = labelled(basicSanitation,
                                   labels = c(
-                                    "Basic sanitation facility" = 1,
-                                    "Limited/unimproved sanitation facility or open defecation" = 0
+                                    "Limited/unimproved sanitation facility or open defecation" = 0,
+                                    "Basic sanitation facility" = 1
                                   ),
                                 label = "Sanitation facility  (basic: improved and not shared)"
     )
@@ -571,13 +571,13 @@ hh <- hh %>%
 
 
 
-## electricity
+## electricity: https://documents1.worldbank.org/curated/en/557341633679857128/pdf/Measuring-Energy-Access-A-Guide-to-Collecting-Data-Using-the-Core-Questions-on-Household-Energy-Use.pdf
 
 hh <- hh %>%
   mutate(
     electricity = case_when(
-      LIGHT01 == "1" & LIGHT03 != "0" ~ 1,
-      LIGHT01 == "2" | LIGHT03 == "0" ~ 0
+      LIGHT01 == "1" & !(LIGHT03 %in% c("0", "7")) ~ 1, # see figure 1 in WB guide - drycell battery classified as capacity tier 0, solar lantern as tier 1 (to be kept under revision)
+      LIGHT01 == "2" | LIGHT03 %in% c("0", "7") ~ 0
     )
   ) %>%
   mutate( electricity = labelled(electricity,
